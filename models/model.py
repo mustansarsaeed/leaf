@@ -4,7 +4,12 @@ from abc import ABC, abstractmethod
 import numpy as np
 import os
 import sys
-import tensorflow as tf
+import tensorflow as tflow
+if tflow.__version__ == '1.14.0':
+    import tensorflow as tf
+else:
+    import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from baseline_constants import ACCURACY_KEY
 
@@ -42,6 +47,21 @@ class Model(ABC):
             all_vars = tf.trainable_variables()
             for variable, value in zip(all_vars, model_params):
                 variable.load(value, self.sess)
+
+    def reset_params(self):
+        with self.graph.as_default():
+            model_params = self.sess.run(tf.trainable_variables())
+            base = [(param * 0 + -0.0826) for param in model_params]
+            # print(f"============== model_params {model_params}")
+            # print(f"============== base {base}")
+            all_vars = tf.trainable_variables()
+            # print(f"============== all_params {all_vars}")
+            for variable, value in zip(all_vars, base):
+                print(variable)
+                variable.load(value, self.sess)
+
+            model_params = self.sess.run(tf.trainable_variables())
+            print(f"============== after reset model_params {model_params}")
 
     def get_params(self):
         with self.graph.as_default():
@@ -84,6 +104,8 @@ class Model(ABC):
             update: List of np.ndarray weights, with each weight array
                 corresponding to a variable in the resulting graph
         """
+        # print(f"{self.get_params()}")
+        # raise SystemExit(0)
         for _ in range(num_epochs):
             self.run_epoch(data, batch_size)
 
@@ -97,14 +119,16 @@ class Model(ABC):
             
             input_data = self.process_x(batched_x)
             target_data = self.process_y(batched_y)
-            
+
+            # print(f"np.round(input_data, 6) {np.round(input_data, 6)}")
+            # print(target_data)
+
             with self.graph.as_default():
                 self.sess.run(self.train_op,
                     feed_dict={
-                        self.features: input_data,
+                        self.features: np.round(input_data, 6),
                         self.labels: target_data
                     })
-
     def test(self, data):
         """
         Tests the current model on the given data.

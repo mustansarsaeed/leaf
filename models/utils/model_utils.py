@@ -2,7 +2,20 @@ import json
 import numpy as np
 import os
 from collections import defaultdict
+import javarandom as jrandom
 
+
+
+def shuffle(arr, n, random):
+    # Start from the last element and swap one by one. We don't
+    # need to run for the first element that's why i > 0
+    for i in range(n - 1, 0, -1):
+        # Pick a random index from 0 to i
+        j = random.nextInt(i + 1)
+
+        # Swap arr[i] with the element at random index
+        arr[i], arr[j] = arr[j], arr[i]
+    return arr
 
 def batch_data(data, batch_size, seed):
     '''
@@ -13,11 +26,23 @@ def batch_data(data, batch_size, seed):
     data_y = data['y']
 
     # randomly shuffle data
-    np.random.seed(seed)
-    rng_state = np.random.get_state()
-    np.random.shuffle(data_x)
-    np.random.set_state(rng_state)
-    np.random.shuffle(data_y)
+    # np.random.seed(seed)
+    # rng_state = np.random.get_state()
+    # np.random.shuffle(data_x)
+    # np.random.set_state(rng_state)
+    # np.random.shuffle(data_y)
+
+    random = jrandom.Random(seed)
+
+    input_n = len(data_x)
+    data_x = shuffle(data_x, input_n, random)
+
+    random = jrandom.Random(seed)
+    output_n = len(data_y)
+    data_y = shuffle(data_y, output_n, random)
+
+    # print(np.round(data_x, 6))
+    # print(data_y)
 
     # loop through mini-batches
     for i in range(0, len(data_x), batch_size):

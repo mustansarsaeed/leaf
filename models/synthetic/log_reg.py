@@ -3,7 +3,12 @@
 import numpy as np
 import os
 import sys
-import tensorflow as tf
+import tensorflow as tflow
+if tflow.__version__ == '1.14.0':
+    import tensorflow as tf
+else:
+    import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from model import Model
 from utils.model_utils import batch_data
@@ -20,10 +25,10 @@ class ClientModel(Model):
         features = tf.placeholder(tf.float32, [None, self.input_dim])
         labels = tf.placeholder(tf.int64, [None])
 
-        logits = tf.layers.dense(features, self.num_classes, activation=tf.nn.sigmoid)
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        logits = tf.layers.dense(features, self.num_classes, activation=tf.nn.relu)
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=labels,
-            logits=logits)
+            logits=logits))
         
         train_op = self.optimizer.minimize(
             loss=loss,
@@ -33,7 +38,7 @@ class ClientModel(Model):
         correct_pred = tf.equal(predictions, labels)
         eval_metric_ops = tf.count_nonzero(correct_pred)
         
-        return features, labels, train_op, eval_metric_ops, tf.reduce_mean(loss)
+        return features, labels, train_op, eval_metric_ops, loss
 
     def process_x(self, raw_x_batch):
         return np.array(raw_x_batch)

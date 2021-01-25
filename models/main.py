@@ -5,7 +5,13 @@ import numpy as np
 import os
 import sys
 import random
-import tensorflow as tf
+import tensorflow as tflow
+if tflow.__version__ == '1.14.0':
+    import tensorflow as tf
+else:
+    import tensorflow.compat.v1 as tf
+
+tf.disable_v2_behavior()
 
 import metrics.writer as metrics_writer
 
@@ -56,7 +62,7 @@ def main():
     # Create client model, and share params with server model
     tf.reset_default_graph()
     client_model = ClientModel(args.seed, *model_params)
-
+    # client_model.reset_params()
     # Create server
     server = Server(client_model)
 
@@ -74,7 +80,6 @@ def main():
     # Simulate training
     for i in range(num_rounds):
         print('--- Round %d of %d: Training %d Clients ---' % (i + 1, num_rounds, clients_per_round))
-
         # Select clients to train this round
         server.select_clients(i, online(clients), num_clients=clients_per_round)
         c_ids, c_groups, c_num_samples = server.get_clients_info(server.selected_clients)
@@ -123,7 +128,7 @@ def setup_clients(dataset, model=None, use_val_set=False):
     test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
 
     users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
-
+    users = ['0', '3']
     clients = create_clients(users, groups, train_data, test_data, model)
 
     return clients
@@ -150,10 +155,9 @@ def get_sys_writer_function(args):
 def print_stats(
     num_round, server, clients, num_samples, args, writer, use_val_set):
     
-    train_stat_metrics = server.test_model(clients, set_to_use='train')
-    print_metrics(train_stat_metrics, num_samples, prefix='train_')
-    writer(num_round, train_stat_metrics, 'train')
-
+    # train_stat_metrics = server.test_model(clients, set_to_use='train')
+    # print_metrics(train_stat_metrics, num_samples, prefix='train_')
+    # writer(num_round, train_stat_metrics, 'train')
     eval_set = 'test' if not use_val_set else 'val'
     test_stat_metrics = server.test_model(clients, set_to_use=eval_set)
     print_metrics(test_stat_metrics, num_samples, prefix='{}_'.format(eval_set))
